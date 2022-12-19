@@ -18,7 +18,8 @@ def roi(image, ancho, alto):
     imagen_aliniada = None
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, th = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-    cv2.imshow('th', th)
+    #cv2.imshow('th', th)
+    # CAPTURA BLANCO Y NEGRO
     cnts = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:1]
 
@@ -40,17 +41,18 @@ while True:
     ret, frame = cap.read()
     if ret == False:
         break
-    TABLERO = roi(frame, ancho=400, alto=600)
-    if TABLERO is not None:
+    CUADRO = roi(frame, ancho=400, alto=600)
+    if CUADRO is not None:
         puntos = []
-        imagen_gris = cv2.cvtColor(TABLERO, cv2.COLOR_BGR2GRAY)
+        imagen_gris = cv2.cvtColor(CUADRO, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(imagen_gris, (5, 5), 1)
         _, th_2 = cv2.threshold(
             blur, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
         cv2.imshow('th_monedas', th_2)
+        # MONEDAS EN BLANCO Y NEGRO
         cnts_2 = cv2.findContours(
             th_2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        cv2.drawContours(TABLERO, cnts_2, -1, (255, 0, 0), 2)
+        #cv2.drawContours(CUADRO, cnts_2, -1, (54, 227, 22), 2)
         S_0_10 = 0
         S_0_20 = 0
         S_0_50 = 0
@@ -58,10 +60,10 @@ while True:
         S_2_00 = 0
         S_5_00 = 0
         for c_2 in cnts_2:
-            AREA_MONEDA = cv2.contourArea(c_2)
+            area = cv2.contourArea(c_2)
             momentos = cv2.moments(c_2)
 
-            # print(AREA_MONEDA)
+            # print(area)
 
             if (momentos["m00"] == 0):
                 momentos["m00"] = 1.0
@@ -69,46 +71,46 @@ while True:
             x = int(momentos["m10"]/momentos["m00"])
             y = int(momentos["m01"]/momentos["m00"])
 
-            if AREA_MONEDA > 4000 and AREA_MONEDA < 5000:
+            if area < 5120 and area > 4800:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "0.10", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "0.10", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_0_10 = S_0_10 + 0.10
 
-            if AREA_MONEDA > 6000 and AREA_MONEDA < 6500:
+            if area < 6800 and area > 6300:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "0.20", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "0.20", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_0_20 = S_0_20 + 0.20
 
-            if AREA_MONEDA > 6900 and AREA_MONEDA < 7200:
+            if area < 7200 and area > 6900:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "5.00", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "5.00", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_5_00 = S_5_00 + 5.00
 
-            if AREA_MONEDA > 7400 and AREA_MONEDA < 8000:
+            if area < 8000 and area > 7400:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "0.50", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "0.50", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_0_50 = S_0_50 + 0.50
 
-            if AREA_MONEDA > 9000 and AREA_MONEDA > 10200:
+            if area < 10000 and area > 9400:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "1.00", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "1.00", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_1_00 = S_1_00 + 1.00
 
-            if AREA_MONEDA > 10700 and AREA_MONEDA < 12500:
+            if area < 11500 and area > 11000:
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(TABLERO, "2.00", (x, y),
-                            font, 0.80, (0, 255, 0), 2)
+                cv2.putText(CUADRO, "2.00", (x, y),
+                            font, 0.70, (0, 0, 0), 2)
                 S_2_00 = S_2_00 + 2.00
 
         TOTAL = S_0_10 + S_0_20 + S_0_50 + S_1_00 + S_2_00 + S_5_00
-        print("TOTAL BS: ", round(TOTAL, 2))
-        cv2.imshow('TABLERO', TABLERO)
-        cv2.imshow('frame', frame)
+        print("TOTAL: ", round(TOTAL, 2))
+        cv2.imshow('CONTADOR DE MONEDAS', CUADRO)
+        #cv2.imshow('frame', frame)
 
     ecs = cv2.waitKey(1) & 0xFF
 
@@ -117,3 +119,4 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+

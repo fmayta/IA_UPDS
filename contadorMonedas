@@ -1,0 +1,119 @@
+import cv2
+import numpy as np
+
+
+def ordenarPuntos(puntos):
+    n_puntos = np.concatenate(
+        [puntos[0], puntos[1], puntos[2], puntos[3]]).tolist()
+    y_order = sorted(n_puntos, key=lambda n_puntos: n_puntos[1])
+    x1_order = y_order[:2]
+    x1_order = sorted(x1_order, key=lambda x1_order: x1_order[0])
+    x2_order = y_order[2:4]
+    x2_order = sorted(x2_order, key=lambda x2_order: x2_order[0])
+
+    return [x1_order[0], x1_order[1], x2_order[0], x2_order[1]]
+
+
+def roi(image, ancho, alto):
+    imagen_aliniada = None
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, th = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+    cv2.imshow('th', th)
+    cnts = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:1]
+
+    for c in cnts:
+        epsilon = 0.01*cv2.arcLength(c, True)
+        aprox = cv2.approxPolyDP(c, epsilon, True)
+        if len(aprox) == 4:
+            puntos = ordenarPuntos(aprox)
+            pts1 = np.float32(puntos)
+            pts2 = np.float32([[0, 0], [ancho, 0], [0, alto], [ancho, alto]])
+            m = cv2.getPerspectiveTransform(pts1, pts2)
+            imagen_aliniada = cv2.warpPerspective(image, m, (ancho, alto))
+    return imagen_aliniada
+
+
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if ret == False:
+        break
+    TABLERO = roi(frame, ancho=400, alto=600)
+    if TABLERO is not None:
+        puntos = []
+        imagen_gris = cv2.cvtColor(TABLERO, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(imagen_gris, (5, 5), 1)
+        _, th_2 = cv2.threshold(
+            blur, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
+        cv2.imshow('th_monedas', th_2)
+        cnts_2 = cv2.findContours(
+            th_2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        cv2.drawContours(TABLERO, cnts_2, -1, (255, 0, 0), 2)
+        S_0_10 = 0
+        S_0_20 = 0
+        S_0_50 = 0
+        S_1_00 = 0
+        S_2_00 = 0
+        S_5_00 = 0
+        for c_2 in cnts_2:
+            AREA_MONEDA = cv2.contourArea(c_2)
+            momentos = cv2.moments(c_2)
+
+            # print(AREA_MONEDA)
+
+            if (momentos["m00"] == 0):
+                momentos["m00"] = 1.0
+
+            x = int(momentos["m10"]/momentos["m00"])
+            y = int(momentos["m01"]/momentos["m00"])
+
+            if AREA_MONEDA > 4000 and AREA_MONEDA < 5000:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "0.10", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_0_10 = S_0_10 + 0.10
+
+            if AREA_MONEDA > 6000 and AREA_MONEDA < 6500:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "0.20", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_0_20 = S_0_20 + 0.20
+
+            if AREA_MONEDA > 6900 and AREA_MONEDA < 7200:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "5.00", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_5_00 = S_5_00 + 5.00
+
+            if AREA_MONEDA > 7400 and AREA_MONEDA < 8000:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "0.50", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_0_50 = S_0_50 + 0.50
+
+            if AREA_MONEDA > 9000 and AREA_MONEDA > 10200:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "1.00", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_1_00 = S_1_00 + 1.00
+
+            if AREA_MONEDA > 10700 and AREA_MONEDA < 12500:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(TABLERO, "2.00", (x, y),
+                            font, 0.80, (0, 255, 0), 2)
+                S_2_00 = S_2_00 + 2.00
+
+        TOTAL = S_0_10 + S_0_20 + S_0_50 + S_1_00 + S_2_00 + S_5_00
+        print("TOTAL BS: ", round(TOTAL, 2))
+        cv2.imshow('TABLERO', TABLERO)
+        cv2.imshow('frame', frame)
+
+    ecs = cv2.waitKey(1) & 0xFF
+
+    if ecs == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
